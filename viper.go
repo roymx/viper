@@ -36,8 +36,6 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/hashicorp/hcl"
-	"github.com/hashicorp/hcl/hcl/printer"
 	"github.com/magiconair/properties"
 	"github.com/mitchellh/mapstructure"
 	toml "github.com/pelletier/go-toml"
@@ -228,7 +226,7 @@ func New() *Viper {
 // can use it in their testing as well.
 func Reset() {
 	v = New()
-	SupportedExts = []string{"json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl"}
+	SupportedExts = []string{"json", "toml", "yaml", "yml", "properties", "props", "prop"}
 	SupportedRemoteProviders = []string{"etcd", "consul"}
 }
 
@@ -267,7 +265,7 @@ type RemoteProvider interface {
 }
 
 // SupportedExts are universally supported extensions.
-var SupportedExts = []string{"json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl"}
+var SupportedExts = []string{"json", "toml", "yaml", "yml", "properties", "props", "prop"}
 
 // SupportedRemoteProviders are universally supported remote providers.
 var SupportedRemoteProviders = []string{"etcd", "consul"}
@@ -1355,15 +1353,6 @@ func (v *Viper) unmarshalReader(in io.Reader, c map[string]interface{}) error {
 			return ConfigParseError{err}
 		}
 
-	case "hcl":
-		obj, err := hcl.Parse(string(buf.Bytes()))
-		if err != nil {
-			return ConfigParseError{err}
-		}
-		if err = hcl.DecodeObject(&c, obj); err != nil {
-			return ConfigParseError{err}
-		}
-
 	case "toml":
 		tree, err := toml.LoadReader(buf)
 		if err != nil {
@@ -1408,17 +1397,6 @@ func (v *Viper) marshalWriter(f afero.File, configType string) error {
 			return ConfigMarshalError{err}
 		}
 		_, err = f.WriteString(string(b))
-		if err != nil {
-			return ConfigMarshalError{err}
-		}
-
-	case "hcl":
-		b, err := json.Marshal(c)
-		ast, err := hcl.Parse(string(b))
-		if err != nil {
-			return ConfigMarshalError{err}
-		}
-		err = printer.Fprint(f, ast.Node)
 		if err != nil {
 			return ConfigMarshalError{err}
 		}
